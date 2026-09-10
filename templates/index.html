@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>GapFinder — Local Business Lead Engine</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%97%88%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============ GLOBAL (hero spec) ============ */
+  *{font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+
+  /* ============ LIQUID GLASS (hero spec, exact) ============ */
+  .liquid-glass{
+    background:rgba(255,255,255,0.01);
+    background-blend-mode:luminosity;
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+    border:none;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,0.1);
+    position:relative;overflow:hidden;
+  }
+  .liquid-glass::before{
+    content:'';position:absolute;inset:0;border-radius:inherit;padding:1.4px;
+    background:linear-gradient(180deg,rgba(255,255,255,0.45) 0%,rgba(255,255,255,0.15) 20%,rgba(255,255,255,0) 40%,rgba(255,255,255,0) 60%,rgba(255,255,255,0.15) 80%,rgba(255,255,255,0.45) 100%);
+    -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    mask-composite:exclude;pointer-events:none;
+  }
+
+  /* ============ ANIMATED VIDEO HERO (GapFinder brand) ============ */
+  #vhero{position:relative;width:100%;height:100vh;height:100svh;overflow:hidden;
+    background:radial-gradient(900px 500px at 20% 10%,#3b2a6d 0%,transparent 60%),radial-gradient(800px 500px at 85% 80%,#0e3a4a 0%,transparent 60%),#070b1d;}
+  #vhero video.vh-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  #vhero .vh-shade{position:absolute;inset:0;z-index:10;pointer-events:none;
+    background:linear-gradient(180deg,rgba(4,6,18,.45) 0%,rgba(4,6,18,0) 30%,rgba(4,6,18,0) 55%,rgba(4,6,18,.72) 100%)}
+  #vhero nav.vh-nav{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:20px}
+  #vhero .vh-logo{display:flex;gap:8px;color:#fff;font-weight:500;font-size:16px;align-items:center}
+  #vhero .vh-pill{display:none}
+  #vhero .vh-ctas{display:none}
+  #vhero .vh-toggle{color:#fff;padding:8px;border-radius:8px;cursor:pointer}
+  #vhero .vh-mmenu{position:absolute;top:72px;left:16px;right:16px;z-index:30;display:none;flex-direction:column;gap:4px;border-radius:16px;padding:16px}
+  #vhero .vh-mmenu.open{display:flex}
+  #vhero .vh-mlink{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 16px;border-radius:8px;font-size:14px;cursor:pointer;background:transparent;border:0;color:rgba(255,255,255,.7);text-align:left}
+  #vhero .vh-mlink.active{background:rgba(255,255,255,.15);color:#fff}
+  #vhero .vh-mcta{display:flex;gap:8px;margin-top:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)}
+  #vhero .vh-mcta button{flex:1}
+  #vhero .vh-hero{position:absolute;bottom:0;left:0;z-index:20;padding:0 24px 40px;max-width:42rem}
+  #vhero .vh-hero h1{color:#fff;font-size:36px;font-weight:500;line-height:1.15;letter-spacing:-0.02em;margin:0 0 16px}
+  #vhero .vh-hero p{color:rgba(255,255,255,.6);font-size:14px;line-height:1.7;margin:0 0 28px;max-width:28rem}
+  #vhero .vh-btnrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+  /* hero buttons — scoped reset beats tool's global button rule */
+  #vhero button{flex:none;min-width:0;box-shadow:none;transform:none}
+  #vhero .vh-btn{display:inline-block;font-weight:500;font-size:14px;padding:12px 24px;border-radius:999px;cursor:pointer;border:0;transition:background-color .2s,color .2s}
+  #vhero .vh-btn-solid{background:#fff;color:#000}
+  #vhero .vh-btn-solid:hover{background:rgba(255,255,255,.9)}
+  #vhero .vh-btn-glass{color:#fff}
+  #vhero .vh-btn-glass:hover{background:rgba(255,255,255,.05)}
+  #vhero .vh-navlink{display:flex;align-items:center;gap:2px;padding:6px 12px;border-radius:6px;font-size:14px;cursor:pointer;border:0;background:transparent;transition:color .2s}
+  #vhero .vh-navlink.active{background:rgba(255,255,255,.15);color:#fff}
+  #vhero .vh-navlink.idle{color:rgba(255,255,255,.7)}
+  #vhero .vh-navlink.idle:hover{color:#fff}
+  #vhero .vh-scrollhint{position:absolute;bottom:18px;right:22px;z-index:20;color:rgba(255,255,255,.55);font-size:11px;letter-spacing:2px;display:none;align-items:center;gap:8px}
+  #vhero .vh-scrollhint svg{animation:vhbob 1.8s ease-in-out infinite}
+  @keyframes vhbob{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(6px);opacity:1}}
+  @media(min-width:640px){
+    #vhero nav.vh-nav{padding:20px 32px}
+    #vhero .vh-hero{padding:0 48px 64px}
+    #vhero .vh-hero h1{font-size:48px}
+    #vhero .vh-btn{font-size:16px;padding:12px 28px}
+  }
+  @media(min-width:768px){
+    #vhero .vh-pill{display:flex;align-items:center;gap:4px;border-radius:12px;padding:8px}
+    #vhero .vh-ctas{display:flex;align-items:center;gap:12px}
+    #vhero .vh-toggle{display:none}
+    #vhero .vh-scrollhint{display:flex}
+  }
+  @media(min-width:1024px){ #vhero .vh-hero h1{font-size:60px}}
+
+  /* ============ TOOL (existing glass UI) ============ */
+  :root{
+    --bg:#070b1d; --glass:rgba(255,255,255,.06); --glass2:rgba(255,255,255,.09);
+    --stroke:rgba(255,255,255,.18); --txt:#eef1ff; --mut:#a7b0d6;
+    --acc1:#7c6cff; --acc2:#22d3ee; --acc3:#f472b6;
+    --hot:#fb7185; --warm:#fbbf24; --cold:#38bdf8; --ok:#34d399;
+    --r:20px;
+  }
+  html,body{margin:0;padding:0}
+  body{color:var(--txt);background:var(--bg);min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+  #tool{position:relative}
+  .bg{position:fixed;inset:0;z-index:-2;background:
+    radial-gradient(900px 500px at 15% 10%, #141b3d 0%, transparent 60%),
+    radial-gradient(800px 500px at 85% 20%, #0b2530 0%, transparent 60%),
+    radial-gradient(700px 600px at 50% 100%, #1c1030 0%, transparent 60%), #070b1d;}
+  .orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.22;z-index:-1;animation:float 12s ease-in-out infinite}
+  .o1{width:340px;height:340px;background:#7c6cff;top:-80px;left:-80px}
+  .o2{width:300px;height:300px;background:#22d3ee;top:20%;right:-100px;animation-delay:-4s}
+  .o3{width:320px;height:320px;background:#f472b6;bottom:-100px;left:30%;animation-delay:-8s}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-24px)}}
+  .wrap{max-width:1120px;margin:0 auto;padding:18px 16px 110px}
+  .statusbar{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--mut);
+    padding:9px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+    border-radius:999px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);white-space:nowrap}
+  .dot{width:9px;height:9px;border-radius:50%;background:#555;flex:none}
+  .dot.ok{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+  .hero{margin:18px 0}
+  .glass{background:var(--glass);border:1px solid var(--stroke);border-radius:var(--r);
+    backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 12px 40px rgba(0,0,0,.35)}
+  .hero-stats{padding:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-content:center}
+  .stat{padding:14px;border-radius:16px;background:rgba(0,0,0,.25);border:1px solid var(--stroke);text-align:center}
+  .stat b{display:block;font-size:24px} .stat span{font-size:12px;color:var(--mut)}
+  .search{padding:18px;margin-bottom:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  #tool label{font-size:12px;color:var(--mut);display:block;margin:0 0 6px}
+  #tool input,#tool select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid var(--stroke);
+    background:rgba(0,0,0,.35);color:var(--txt);font-size:15px;outline:none}
+  #tool input:focus,#tool select:focus{border-color:var(--acc2);box-shadow:0 0 0 3px rgba(34,211,238,.2)}
+  #tool select option{background:#151b3d}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  #tool button{border:0;border-radius:999px;padding:11px 20px;font-weight:600;font-size:13px;cursor:pointer;color:#000;
+    background:#fff;transition:background-color .2s;flex:1 1 auto;min-width:0}
+  #tool button:hover{background:rgba(255,255,255,.88)}
+  #tool button:active{transform:scale(.98)}
+  #tool button.pri{background:#fff;color:#000}
+  #tool button.ghost{position:relative;overflow:hidden;background:rgba(255,255,255,.01);background-blend-mode:luminosity;
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:none;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.1);color:#fff}
+  #tool button.ghost::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1.4px;
+    background:linear-gradient(180deg,rgba(255,255,255,.45) 0%,rgba(255,255,255,.15) 20%,rgba(255,255,255,0) 40%,rgba(255,255,255,0) 60%,rgba(255,255,255,.15) 80%,rgba(255,255,255,.45) 100%);
+    -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;
+    mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;pointer-events:none}
+  #tool button.ghost:hover{background:rgba(255,255,255,.06)}
+  #tool button:disabled{opacity:.5;cursor:wait}
+  .range-row{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--mut)}
+  #tool input[type=range]{padding:0;accent-color:#22d3ee}
+  .progress{height:10px;border-radius:999px;background:rgba(0,0,0,.4);border:1px solid var(--stroke);overflow:hidden;margin-top:12px;display:none}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc1),var(--acc2),var(--acc3));transition:width .3s}
+  .hint{font-size:12px;color:var(--mut);margin-top:10px;line-height:1.5}
+  .meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 2px 12px;flex-wrap:wrap}
+  .meta h3{margin:0;font-size:16px} .meta span{font-size:12px;color:var(--mut)}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .card{padding:16px;position:relative;overflow:hidden;transition:.2s}
+  .card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.32)}
+  .card::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);opacity:.9}
+  .top{display:flex;gap:12px;align-items:center}
+  .ring{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+    font-weight:800;font-size:16px;color:white;background:conic-gradient(var(--c,#38bdf8) calc(var(--p,0)*1%),rgba(255,255,255,.12) 0)}
+  .ring span{background:#070b1d;width:46px;height:46px;border-radius:50%;display:grid;place-items:center}
+  .card h4{margin:0;font-size:15px;line-height:1.3}
+  .cat{font-size:11px;color:var(--mut);margin-top:3px;text-transform:uppercase;letter-spacing:.6px}
+  .badge{display:inline-block;font-size:11px;font-weight:800;padding:5px 10px;border-radius:999px;margin-top:10px;letter-spacing:.3px}
+  .b-no{background:rgba(251,113,133,.18);color:#fecdd3;border:1px solid rgba(251,113,133,.4)}
+  .b-dead{background:rgba(251,146,60,.18);color:#fed7aa;border:1px solid rgba(251,146,60,.4)}
+  .b-thin{background:rgba(251,191,36,.18);color:#fde68a;border:1px solid rgba(251,191,36,.4)}
+  .b-good{background:rgba(52,211,153,.16);color:#a7f3d0;border:1px solid rgba(52,211,153,.4)}
+  .aire{display:inline-block;font-size:11px;font-weight:800;padding:5px 10px;border-radius:999px;margin-top:10px;margin-left:6px;letter-spacing:.3px;
+    background:rgba(124,108,255,.18);color:#ddd6fe;border:1px solid rgba(124,108,255,.45)}
+  /* dashboard view */
+  .viewtoggle{display:flex;gap:8px;align-items:center}
+  #tool .viewtoggle button{flex:none;padding:9px 16px;font-size:12px}
+  #tool .viewtoggle button.active{outline:2px solid var(--acc2);filter:brightness(1.1)}
+  .dashwrap{display:none;margin-top:4px;border-radius:16px;overflow:auto;max-width:100%;
+    border:1px solid var(--stroke);background:rgba(0,0,0,.32);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+  .dashwrap.show{display:block}
+  table.dash{border-collapse:collapse;width:100%;min-width:780px;font-size:13px}
+  table.dash th{position:sticky;top:0;background:#151b3d;color:#cbd5ff;text-align:left;
+    padding:10px 12px;font-size:12px;white-space:nowrap;z-index:2}
+  table.dash th[data-k]{cursor:pointer;user-select:none}
+  table.dash th[data-k]:hover{color:#fff}
+  table.dash td{padding:10px 12px;border-top:1px solid rgba(255,255,255,.08);vertical-align:top;color:#dbe1ff}
+  table.dash tr:hover td{background:rgba(124,108,255,.08)}
+  .dscore{display:inline-block;min-width:34px;text-align:center;font-weight:800;padding:4px 8px;border-radius:9px;background:rgba(255,255,255,.1);color:#fff}
+  .dbtn{display:inline-block;padding:9px 12px;border-radius:10px;font-size:12px;font-weight:700;
+    text-decoration:none;margin:2px 4px 2px 0;white-space:nowrap}
+  .dcall{background:linear-gradient(135deg,#34d399,#10b981);color:#04281c}
+  .dmaps{background:rgba(34,211,238,.15);color:#a5f3fc;border:1px solid rgba(34,211,238,.4)}
+  .dmail{color:#fff;font-size:12px;word-break:break-all}
+  .dmut{opacity:.55;font-size:12px}
+  /* call/maps anchors inside cards */
+  #tool .actions a.abtn{flex:1 1 auto;text-align:center;padding:9px 12px;font-size:12px;border-radius:999px;
+    color:var(--txt);text-decoration:none;font-weight:600}
+  #tool .actions a.abtn-call{background:linear-gradient(135deg,#34d399,#10b981);color:#04281c;border:0}
+  .kv{font-size:13px;color:#d6dbff;margin:8px 0;line-height:1.55;word-break:break-word}
+  .kv b{color:#fff} .kv a{color:#67e8f9;text-decoration:none}
+  .reasons{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+  .reasons li{font-size:11px;background:rgba(0,0,0,.3);border:1px solid var(--stroke);padding:5px 9px;border-radius:999px;color:#cbd5ff}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .actions button{padding:9px 12px;font-size:12px}
+  .empty{padding:34px 20px;text-align:center;color:var(--mut)}
+  .empty .big{font-size:44px;margin-bottom:8px}
+  #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;
+    background:rgba(10,14,35,.9);border:1px solid var(--stroke);backdrop-filter:blur(16px);
+    padding:12px 18px;border-radius:14px;font-size:13px;transition:.3s;z-index:50;max-width:92vw}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #tool footer{margin-top:18px;text-align:center;font-size:12px;color:var(--mut);line-height:1.7}
+  #tool footer a{color:#67e8f9;text-decoration:none}
+  .mobilebar{display:none}
+  @media(max-width:900px){.hero-stats{grid-template-columns:1fr 1fr}.cards{grid-template-columns:repeat(2,1fr)}#tool button{min-height:44px}}
+  @media(max-width:640px){
+    .wrap{padding:12px 12px 120px}
+    .grid2{grid-template-columns:1fr}
+    .cards{grid-template-columns:1fr}
+    #tool button{min-height:48px}
+    /* iOS Safari zooms on focus when inputs are under 16px */
+    #tool input,#tool select{font-size:16px}
+    /* hero: clear the fixed action bar + bigger touch targets */
+    #vhero .vh-hero{padding-bottom:128px}
+    #vhero .vh-btn{min-height:48px}
+    #vhero .vh-toggle{padding:12px}
+    .mobilebar{display:flex;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;gap:10px;
+      background:rgba(12,16,38,.82);border:1px solid var(--stroke);border-radius:18px;padding:10px;
+      backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+    .mobilebar button{margin:0}
+    /* toast floats above the action bar */
+    #toast{bottom:calc(100px + env(safe-area-inset-bottom))}
+    .dashwrap{-webkit-overflow-scrolling:touch}
+    table.dash{font-size:12px;min-width:0}
+    table.dash th,table.dash td{padding:8px 10px}
+    /* stacked rows instead of sideways scroll */
+    table.dash thead{display:none}
+    table.dash,table.dash tbody,table.dash tr,table.dash td{display:block;width:100%;box-sizing:border-box}
+    table.dash tr{border-top:1px solid rgba(255,255,255,.14);padding:8px 0}
+    table.dash td{border:0;padding:7px 12px}
+    table.dash td.stick{position:static;background:transparent;box-shadow:none}
+    table.dash td[data-lbl]::before{content:attr(data-lbl);display:block;font-size:10px;
+      text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:3px}
+    .meta{flex-direction:column;align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= ANIMATED HERO (liquid glass + looping video) ================= -->
+<section id="vhero">
+  <video class="vh-video" autoplay muted loop playsinline preload="metadata"
+    src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_230229_7c9bc431-46cf-489a-948d-e8144d8eb5d4.mp4"></video>
+  <div class="vh-shade"></div>
+
+  <nav class="vh-nav">
+    <div class="vh-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"/></svg>
+      <span>GapFinder</span>
+    </div>
+
+    <div class="vh-pill liquid-glass">
+      <button class="vh-navlink active" data-nav="home">Home</button>
+      <button class="vh-navlink idle" data-nav="tool">Lead Finder</button>
+    </div>
+
+    <div class="vh-ctas">
+      <button class="vh-btn vh-btn-solid" data-nav="tool">Find Leads</button>
+    </div>
+
+    <button class="vh-toggle liquid-glass" id="vMenuBtn" aria-label="Toggle menu">
+      <svg id="vIcoMenu" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16"/><path d="M4 6h16"/><path d="M4 18h16"/></svg>
+      <svg id="vIcoX" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </nav>
+
+  <div class="vh-mmenu liquid-glass" id="vMobileMenu">
+    <button class="vh-mlink active" data-nav="home">Home</button>
+    <button class="vh-mlink" data-nav="tool">Lead Finder</button>
+    <div class="vh-mcta">
+      <button class="vh-btn vh-btn-solid" data-nav="tool">Find Leads</button>
+    </div>
+  </div>
+
+  <div class="vh-hero">
+    <h1>Find Gaps, Win Clients Every Day</h1>
+    <p>Take charge of your pipeline with live OpenStreetMap data — uncover local businesses missing websites, audit their presence, and reach verified emails with zero paid APIs.</p>
+    <div class="vh-btnrow">
+      <button class="vh-btn vh-btn-solid" data-nav="tool">Find Leads</button>
+      <button class="vh-btn vh-btn-glass liquid-glass" data-nav="tool">See How</button>
+    </div>
+  </div>
+
+  <div class="vh-scrollhint">SCROLL
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+</section>
+
+<!-- ================= TOOL (just below hero) ================= -->
+<div id="tool">
+<div class="bg"></div><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+
+<div class="wrap">
+  <div class="statusbar"><span id="hdot" class="dot"></span><span id="hstat">connecting…</span></div>
+
+  <div class="hero">
+    <div class="glass hero-stats">
+      <div class="stat"><b id="sTotal">0</b><span>leads found</span></div>
+      <div class="stat"><b id="sNoSite">0</b><span>no website</span></div>
+      <div class="stat"><b id="sAvg">–</b><span>avg score</span></div>
+      <div class="stat"><b id="sMail">0</b><span>emails found</span></div>
+    </div>
+  </div>
+
+  <div class="glass search">
+    <div class="grid2">
+      <div><label>📍 Area (try “Bandra, Mumbai” / “Koramangala, Bengaluru”)</label>
+        <input id="area" value="Bandra West, Mumbai" placeholder="e.g. Paharganj, Delhi" /></div>
+      <div><label>🏷️ Niche</label>
+        <select id="cat">
+          <option value="all">All businesses</option>
+          <option value="restaurant">Restaurant / Cafe</option>
+          <option value="salon">Salon / Beauty / Spa</option>
+          <option value="dentist">Clinic / Dentist / Pharmacy</option>
+          <option value="gym">Gym / Fitness / Yoga</option>
+          <option value="hotel">Hotel / Guest house</option>
+        </select></div>
+    </div>
+    <div class="range-row">Max leads <input id="max" type="range" min="10" max="60" value="30" style="flex:1" /> <b id="maxv" style="color:#fff">30</b></div>
+    <div class="row">
+      <button class="pri" id="btnSearch">🔍 Find leads</button>
+      <button class="ghost" id="btnEnrich">⚡ Enrich all</button>
+      <button class="ghost" id="btnDemo">✨ Demo data</button>
+      <button class="ghost" id="btnCsv">⬇ CSV</button>
+    </div>
+    <div class="progress" id="prog"><i id="progbar"></i></div>
+    <div class="hint" id="status">Tip: Search finds OSM listings fast. Then <b>Enrich all</b> guesses websites, crawls emails &amp; scores. Data: © OpenStreetMap contributors (ODbL).</div>
+  </div>
+
+  <div class="meta">
+    <div><h3 id="rtitle">No results yet</h3><span id="rsub">run a search or tap Demo</span></div>
+    <div class="viewtoggle">
+      <button class="ghost active" id="vCards">Cards</button>
+      <button class="ghost" id="vDash">Dashboard</button>
+    </div>
+  </div>
+  <div class="cards" id="cards">
+    <div class="glass empty" style="grid-column:1/-1"><div class="big">🛰️</div>
+      <b style="color:#fff">Ready to hunt gaps?</b><br/>Search any locality — or tap <b>Demo data</b> for an instant preview.</div>
+  </div>
+
+  <div class="dashwrap" id="dashWrap">
+    <table class="dash" id="dashTable">
+      <thead><tr>
+        <th data-k="score">Score &#8645;</th>
+        <th data-k="name" class="stick">Business</th>
+        <th data-k="category">Niche</th>
+        <th>Contact</th>
+        <th data-k="website">Website</th>
+        <th>Emails</th>
+        <th>Verify &amp; Call</th>
+      </tr></thead>
+      <tbody id="dashBody"></tbody>
+    </table>
+  </div>
+
+  <footer>Built with Flask · Overpass API · Nominatim · DuckDuckGo · dnspython · No paid keys · © OpenStreetMap contributors<br/>
+  <a href="http://127.0.0.1:5000/api/health" target="_blank">API health</a> · Local only — your searches stay on your machine</footer>
+</div>
+
+<div class="mobilebar">
+  <button class="pri" id="mSearch">🔍 Find</button>
+  <button class="ghost" id="mEnrich">⚡ Enrich</button>
+  <button class="ghost" id="mCsv">⬇ CSV</button>
+</div>
+
+<div id="toast"></div>
+</div>
+
+<script>
+// ---- animated hero interactions ----
+(function(){
+  var btn = document.getElementById('vMenuBtn');
+  var menu = document.getElementById('vMobileMenu');
+  var icoM = document.getElementById('vIcoMenu');
+  var icoX = document.getElementById('vIcoX');
+  function closeMenu(){
+    menu.classList.remove('open');
+    icoM.style.display=''; icoX.style.display='none';
+  }
+  btn.addEventListener('click', function(){
+    var open = menu.classList.toggle('open');
+    icoM.style.display = open ? 'none' : '';
+    icoX.style.display = open ? '' : 'none';
+  });
+  document.querySelectorAll('#vhero [data-nav="tool"]').forEach(function(b){
+    b.addEventListener('click', function(){
+      closeMenu();
+      document.getElementById('tool').scrollIntoView({behavior:'smooth'});
+    });
+  });
+  document.querySelectorAll('#vhero [data-nav="home"]').forEach(function(b){
+    b.addEventListener('click', function(){
+      closeMenu();
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+})();
+</script>
+
+<script>
+let LEADS = [];
+let AREA = "";
+const $ = id => document.getElementById(id);
+const toast = m => { const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove('show'),2600); };
+$('max').oninput = e => $('maxv').textContent = e.target.value;
+
+async function health(){
+  try{ const r = await fetch('/api/health'); const j = await r.json();
+    $('hdot').classList.add('ok');
+    let s = j.dns ? 'local API ● DNS on' : 'local API ● no DNS';
+    if(j.sgai && j.sgai.enabled) s += ' ● AI on';
+    $('hstat').textContent = s;
+  }catch{ $('hstat').textContent = 'offline? run python app.py'; }
+}
+health();
+
+function badge(s){
+  if(s==='no-website') return '<span class="badge b-no">● NO WEBSITE — hot</span>';
+  if(s==='dead-site') return '<span class="badge b-dead">● SITE DOWN — hot</span>';
+  if(s==='thin-site') return '<span class="badge b-thin">● THIN SITE — warm</span>';
+  return '<span class="badge b-good">● HAS SITE — audit it</span>';
+}
+function ringColor(p){ return p>=75 ? '#fb7185' : p>=50 ? '#fbbf24' : '#38bdf8'; }
+
+function render(){
+  const box = $('cards');
+  if(!LEADS.length){ box.innerHTML = '<div class="glass empty" style="grid-column:1/-1"><div class="big">🛰️</div><b style="color:#fff">Ready to hunt gaps?</b><br/>Search any locality — or tap <b>Demo data</b>.</div>'; return; }
+  box.innerHTML = LEADS.map((l,i)=>{
+    const p = l.score ?? 0, c = ringColor(p);
+    return `<div class="glass card">
+      <div class="top">
+        <div class="ring" style="--p:${p};--c:${c}"><span>${p}</span></div>
+        <div><h4>${esc(l.name)}</h4><div class="cat">${esc(l.category||'business')} · #${i+1}</div></div>
+      </div>
+      ${badge(l.status||'no-website')}${l.engine==='ai'?'<span class="aire">✨ AI-enriched</span>':''}
+      <div class="kv">📍 ${esc(l.address||'—')}<br/>
+      ${l.phone?'📞 <b>'+esc(l.phone)+'</b><br/>':'📞 <span style="opacity:.6">no phone listed</span><br/>'}
+      ${l.website?'🌐 <a href="'+esc(l.website)+'" target="_blank">'+esc(shortUrl(l.website))+'</a>'+(l.guessed?' <span style="font-size:11px;opacity:.7">(guessed)</span>':''):'🌐 <span style="opacity:.6">no website</span>'}<br/>
+      ${l.emails&&l.emails.length?'✉️ <b>'+esc(l.emails[0])+'</b>'+(l.mx_valid?' <span style="color:#6ee7b7;font-size:11px">✓ MX</span>':' <span style="color:#fca5a5;font-size:11px">✕ MX</span>'):''}
+      </div>
+      ${(l.reasons&&l.reasons.length)?'<ul class="reasons">'+l.reasons.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul>':''}
+      <div class="actions">
+        ${l.website?`<button class="ghost" onclick="window.open('${esc(l.website)}','_blank')">Visit</button>`:''}
+        <a class="abtn liquid-glass" target="_blank" rel="noopener" href="${mapsUrl(l)}">📍 Maps</a>
+        ${l.phone?`<a class="abtn abtn-call liquid-glass" href="${telHref(l.phone)}">📞 Call</a>`:''}
+        ${l.emails&&l.emails.length?`<button class="ghost" onclick="copyMail('${esc(l.emails[0]).replace(/'/g,'')}')">Copy ✉️</button>`:''}
+        <button class="ghost" onclick="aiEnrich(${i})">✨ AI</button>
+        <button class="ghost" onclick="enrichOne(${i})">↻ Re-check</button>
+      </div>
+    </div>`;
+  }).join('');
+  // stats
+  $('sTotal').textContent = LEADS.length;
+  $('sNoSite').textContent = LEADS.filter(l=>(l.status||'')==='no-website'||!l.website).length;
+  const sc = LEADS.filter(l=>l.score!=null).map(l=>l.score);
+  $('sAvg').textContent = sc.length ? Math.round(sc.reduce((a,b)=>a+b,0)/sc.length) : '–';
+  $('sMail').textContent = LEADS.filter(l=>l.emails&&l.emails.length).length;
+  $('rtitle').textContent = `${LEADS.length} leads · ${esc(AREA)}`;
+  $('rsub').textContent = 'sorted by score · tap Enrich all for emails';
+  // sort view by score desc
+  LEADS.sort((a,b)=>(b.score||0)-(a.score||0));
+  if(VIEW==='dash') renderDash();
+}
+function telHref(p){ return 'tel:' + String(p||'').replace(/[^+\d]/g,''); }
+function mapsUrl(l){ return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(((l&&l.name)||'') + ' ' + ((l&&l.address)||'')); }
+
+// ---- dashboard view ----
+let VIEW='cards', SORT={k:'score',dir:-1};
+function setView(v){
+  VIEW=v;
+  $('vCards').classList.toggle('active', v==='cards');
+  $('vDash').classList.toggle('active', v==='dash');
+  $('cards').style.display = v==='cards' ? '' : 'none';
+  $('dashWrap').classList.toggle('show', v==='dash');
+  if(v==='dash') renderDash();
+}
+function sortedLeads(){
+  const arr=[...LEADS], k=SORT.k, dir=SORT.dir;
+  const val=l=> k==='score'?(l.score??-1)
+    : k==='name'?((l.name||'').toLowerCase()) : k==='category'?(l.category||'')
+    : (l.website?1:0);
+  arr.sort((a,b)=>{ const x=val(a), y=val(b); return (x<y?-1:x>y?1:0)*dir; });
+  return arr;
+}
+function renderDash(){
+  const tb=$('dashBody');
+  if(!LEADS.length){ tb.innerHTML='<tr><td colspan="7" class="dmut">No leads yet — run a search or Demo.</td></tr>'; return; }
+  tb.innerHTML = sortedLeads().map(l=>{
+    const site = l.website
+      ? '<a href="'+esc(l.website)+'" target="_blank" rel="noopener" style="color:#67e8f9">'+esc(shortUrl(l.website))+'</a>'+(l.guessed?' <span class="dmut">(guessed)</span>':'')
+      : '<span class="dmut">none — verify on Maps</span>';
+    const contact = l.phone ? esc(l.phone) : '<span class="dmut">—</span>';
+    const mails = (l.emails&&l.emails.length)
+      ? l.emails.map(e=>'<div class="dmail">'+esc(e)+(l.mx_valid?' ✓':'')+'</div>').join('')
+      : '<span class="dmut">—</span>';
+    const eng = l.engine==='ai' ? ' <span class="dmut">·AI</span>' : '';
+    const call = l.phone ? '<a class="dbtn dcall" href="'+telHref(l.phone)+'">📞 Call</a>' : '';
+    return '<tr><td data-lbl="Score"><span class="dscore">'+(l.score??'—')+'</span></td>'
+      + '<td data-lbl="Business" class="stick"><b>'+esc(l.name)+'</b><div class="dmut">'+esc(l.address||'')+'</div></td>'
+      + '<td data-lbl="Niche">'+esc(l.category||'business')+eng+'</td>'
+      + '<td data-lbl="Contact">'+contact+'</td><td data-lbl="Website">'+site+'</td><td data-lbl="Emails">'+mails+'</td>'
+      + '<td data-lbl="Verify and call" style="min-width:0"><a class="dbtn dmaps" target="_blank" rel="noopener" href="'+mapsUrl(l)+'">📍 Check Maps</a>'+call+'</td></tr>';
+  }).join('');
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function shortUrl(u){ try{ return new URL(u.startsWith('http')?u:'https://'+u).hostname.replace('www.',''); }catch{ return u.slice(0,28); } }
+function copyMail(e){ navigator.clipboard?.writeText(e.replace(' (guessed)','')); toast('Email copied: '+e); }
+
+function setProg(p){ const w=$('prog'); w.style.display = p==null?'none':'block'; if(p!=null) $('progbar').style.width = p+'%'; }
+
+async function doSearch(){
+  const area = $('area').value.trim(); if(!area) return toast('Enter an area first');
+  const btn=$('btnSearch'); btn.disabled=true; setProg(8); $('status').textContent='Geocoding + querying Overpass… (10–25s first run)';
+  try{
+    const r = await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({area, category:$('cat').value, max:+$('max').value})});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.error||'search failed');
+    AREA = j.area||area;
+    LEADS = (j.leads||[]).map(l=>({...l, score: l.website?20:55, status: l.website?'has-website':'no-website', reasons: l.website?['Listed site — enrich to audit']:['No website listed']}));
+    render(); setProg(100); setTimeout(()=>setProg(null),800);
+    $('status').textContent = `Found ${LEADS.length} · ${AREA}. Now tap ⚡ Enrich all.`;
+    toast(`Found ${LEADS.length} leads`);
+    if(LEADS.length) enrichAll(true);
+  }catch(e){ toast('Error: '+e.message); setProg(null); $('status').textContent='Overpass busy? Try smaller area or Demo data.'; }
+  finally{ btn.disabled=false; }
+}
+
+async function enrichOne(i){
+  const l = LEADS[i]; if(!l) return;
+  try{
+    const r = await fetch('/api/enrich',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:l.name, area:AREA, website:l.website, phone:l.phone})});
+    const j = await r.json();
+    Object.assign(l, j);
+    render();
+  }catch{}
+}
+
+async function enrichAll(auto){
+  if(!LEADS.length) return toast('Search first');
+  $('btnEnrich').disabled = true; setProg(2);
+  $('status').textContent = 'Enriching: guessing sites → crawling emails → MX check…';
+  const N = Math.min(LEADS.length, 25);
+  for(let i=0;i<N;i++){
+    await enrichOne(i);
+    // re-sort only at end to avoid jumpiness; update progress
+    setProg(Math.round((i+1)/N*100));
+    $('status').textContent = `Enriched ${i+1}/${N}…`;
+    await new Promise(r=>setTimeout(r,250));
+  }
+  LEADS.sort((a,b)=>(b.score||0)-(a.score||0)); render();
+  setProg(100); setTimeout(()=>setProg(null),900);
+  $('btnEnrich').disabled=false;
+  $('status').textContent=`Done — ${LEADS.filter(l=>l.emails&&l.emails.length).length} with emails. Export CSV for outreach.`;
+  toast('Enrichment complete');
+}
+
+function loadDemo(){
+  fetch('/api/demo').then(r=>r.json()).then(async j=>{
+    AREA='Demo — India sample'; LEADS=j.leads.map(l=>({...l, score:50, status:'no-website', reasons:['Demo — tap Enrich']}));
+    render(); toast('Demo loaded — tap Enrich all');
+    enrichAll();
+  });
+}
+
+function toCSV(){
+  if(!LEADS.length) return toast('Nothing to export');
+  const rows=[['name','category','address','phone','website','guessed','emails','mx_valid','mx_detail','site_status','score','engine','reasons']];
+  LEADS.forEach(l=>rows.push([l.name,l.category||'',l.address||'',l.phone||'',l.website||'',l.guessed?'yes':'',
+    (l.emails||[]).join('; '),l.mx_valid?'yes':'no',l.mx_detail||'',l.site_status||l.status||'',l.score??'',l.engine||'osm',(l.reasons||[]).join(' | ')]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='gapfinder_leads.csv'; a.click(); toast('CSV downloaded');
+}
+
+async function aiEnrich(i){
+  const l = LEADS[i]; if(!l) return;
+  toast('AI enriching: ' + l.name + '…');
+  try{
+    const r = await fetch('/api/ai-enrich',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:l.name, area:AREA, website:l.website, phone:l.phone})});
+    const j = await r.json();
+    if(j.engine==='ai'){ Object.assign(l, j); render();
+      toast('AI done' + (j.credits_used!=null ? ' (~'+j.credits_used+' credits)' : ''));
+    } else if(j.engine==='free-fallback'){ toast(j.error || 'AI unavailable — free pipeline used'); }
+    else { toast(j.error || 'AI disabled — set SGAI_API_KEY server-side'); }
+  }catch(e){ toast('AI error: '+e.message); }
+}
+
+$('btnSearch').onclick=doSearch; $('mSearch').onclick=doSearch;
+$('btnEnrich').onclick=()=>enrichAll(); $('mEnrich').onclick=()=>enrichAll();
+$('btnDemo').onclick=loadDemo; $('btnCsv').onclick=toCSV; $('mCsv').onclick=toCSV;
+$('vCards').onclick=()=>setView('cards'); $('vDash').onclick=()=>setView('dash');
+document.querySelectorAll('#dashTable th[data-k]').forEach(th=>{
+  th.onclick=()=>{
+    const k=th.getAttribute('data-k');
+    if(SORT.k===k) SORT.dir*=-1; else SORT={k,dir:(k==='name'||k==='category')?1:-1};
+    renderDash();
+  };
+});
+window.enrichOne=enrichOne; window.copyMail=copyMail; window.aiEnrich=aiEnrich;
+</script>
+</body>
+</html>
