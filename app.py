@@ -506,6 +506,97 @@ def ai_enrich():
         "credits_used": credits_used,
     })
 
+@app.route("/api/summary", methods=["POST"])
+def summary():
+    """AI business summary for one lead. Body: {name, category, address, area,
+    phone, website, engine="sgai"|"nvidia" (default: whichever is keyed,
+    NVIDIA first)}. Returns {engine, name, website, summary, bullets[],
+    contact{emails,phones}, services[]}. Never raises."""
+    data = request.get_json(force=True) or {}
+    name = (data.get("name") or "").strip()
+    category = (data.get("category") or "business").strip()
+    address = (data.get("address") or "").strip()
+    area = (data.get("area") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    website = (data.get("website") or "").strip()
+    want = (data.get("engine") or "").strip().lower()
+    if want in ("sgai", "nvidia"):
+        use_nv = want == "nvidia"
+    else:
+        use_nv = bool(HAS_NV and nvidia.enabled())
+        if not use_nv and not (HAS_SGAI and sgai.enabled()):
+            return jsonify({"error": "No AI engine keyed. Set NVIDIA_API_KEY or SGAI_API_KEY server-side."}), 503
+    eng = "ai-nvidia" if use_nv else "ai"
+    if use_nv and (not HAS_NV or not nvidia.enabled()):
+        return jsonify({"error": "NVIDIA_API_KEY not set."}), 503
+    if not use_nv and (not HAS_SGAI or not sgai.enabled()):
+        return jsonify({"error": "SGAI_API_KEY not set."}), 503
+
+    try:
+        guessed = False
+        if not website and name:
+            if use_nv:
+                website = duckduckgo_guess(name, area)
+            else:
+                website = sgai.search_website(name, area)
+            guessed = bool(website)
+        if use_nv:
+            if website:
+                profile = nvidia.extract_lead(website)
+                ctx = (f"Business: {name} ({category}), {address or area}. "
+                       f"Website: {website}. Extracted facts: {profile}")
+                s = nvidia.summarize(ctx)
+                summary, bullets = s["summary"], s["bullets"]
+            else:
+                s = nvidia.summarize(
+                    f"Business: {name} ({category}), {address or area}. "
+                    "No website found online. Describe what this kind of local "
+                    "business typically does, clearly marked as inferred.")
+                summary, bullets = s["summary"], s["bullets"]
+                profile = {"emails": [], "phones": [], "services": []}
+        else:
+            if website:
+                profile = sgai.extract_lead(website)
+            else:
+                return jsonify({"engine": eng, "name": name, "website": "",
+                                "summary": f"{name} appears to be a {category} business in {address or area} with no website found online — a prime web-design lead.",
+                                "bullets": ["No website found", "Verify via Check Maps button"],
+                                "contact": {"emails": [], "phones": [phone] if phone else []},
+                                "services": []})
+            bits = [f"{name} is a {category} business in {address or area}."]
+            if profile.get("summary"):
+                bits.append(profile["summary"])
+            if profile.get("services"):
+                bits.append("Services include: " + ", ".join(profile["services"][:6]) + ".")
+            summary = " ".join(bits)[:800]
+            bullets = []
+            if profile.get("owner_name"):
+                bullets.append("Owner: " + profile["owner_name"])
+            if profile.get("services"):
+                bullets.append(f"{len(profile['services'])} services listed")
+            if not profile.get("has_pricing"):
+                bullets.append("No prices listed online")
+            if profile.get("has_booking"):
+                bullets.append("Has online booking")
+            if not website:
+                bullets.append("No website found")
+    except Exception as ex:
+        return jsonify({"error": f"AI summary failed ({ex})"}), 502
+
+    emails = list(dict.fromkeys(
+        [e for e in (profile.get("emails") or []) if "@" in str(e)]))[:5]
+    phones = list(dict.fromkeys(
+        [p for p in list(profile.get("phones") or []) + ([phone] if phone else []) if p]))[:3]
+    if not website:
+        bullets = bullets + ["No website found — prime web-design lead"]
+    return jsonify({
+        "engine": eng, "name": name, "website": website, "guessed": guessed,
+        "summary": summary, "bullets": bullets[:7],
+        "contact": {"emails": emails, "phones": phones},
+        "services": list(profile.get("services") or [])[:8],
+    })
+
+
 @app.route("/api/demo")
 def demo():
     demo_leads = [

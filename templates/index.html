@@ -178,6 +178,8 @@
   .dcall{background:linear-gradient(135deg,#34d399,#10b981);color:#04281c}
   .dmaps{background:rgba(34,211,238,.15);color:#a5f3fc;border:1px solid rgba(34,211,238,.4)}
   .dmail{color:#fff;font-size:12px;word-break:break-all}
+  #tool button.dbtn{background:rgba(34,211,238,.15);color:#a5f3fc;border:1px solid rgba(34,211,238,.4)}
+  #tool button.dbtn:hover{background:rgba(34,211,238,.25)}
   .dmut{opacity:.55;font-size:12px}
   /* call/maps anchors inside cards */
   #tool .actions a.abtn{flex:1 1 auto;text-align:center;padding:9px 12px;font-size:12px;border-radius:999px;
@@ -195,6 +197,21 @@
     background:rgba(10,14,35,.9);border:1px solid var(--stroke);backdrop-filter:blur(16px);
     padding:12px 18px;border-radius:14px;font-size:13px;transition:.3s;z-index:50;max-width:92vw}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  /* AI summary modal */
+  .mback{display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:12px}
+  .mback.show{display:flex}
+  .msheet{width:100%;max-width:560px;max-height:82vh;overflow:auto;padding:20px}
+  .mhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .mhead b{font-size:16px;color:#fff}
+  #tool #mClose{flex:none;min-width:0;padding:8px 14px;font-size:12px}
+  .msum{font-size:14px;line-height:1.65;color:#e6eaff;margin:8px 0}
+  .mbul{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+  .mbul li{font-size:13px;background:rgba(0,0,0,.3);border:1px solid var(--stroke);padding:8px 12px;border-radius:10px;color:#cbd5ff}
+  .mcontact{font-size:13px;margin-top:10px;line-height:1.9;color:#dbe1ff}
+  .mcontact a{color:#67e8f9;text-decoration:none}
+  .meng{font-size:11px;color:var(--mut)}
+  @media(max-width:640px){.mback{align-items:flex-end;padding:0}.msheet{border-radius:20px 20px 0 0;max-height:88vh}}
   #tool footer{margin-top:18px;text-align:center;font-size:12px;color:var(--mut);line-height:1.7}
   #tool footer a{color:#67e8f9;text-decoration:none}
   .mobilebar{display:none}
@@ -366,6 +383,14 @@
   <button class="ghost" id="mCsv">⬇ CSV</button>
 </div>
 
+<div id="mback" class="mback">
+  <div class="msheet glass">
+    <div class="mhead"><b id="mTitle">Summary</b><button class="ghost" id="mClose">✕</button></div>
+    <div class="meng" id="mEng"></div>
+    <div id="mBody"><div class="hint">Loading…</div></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 </div>
 
@@ -413,6 +438,8 @@ async function health(){
     let s = j.dns ? 'local API ● DNS on' : 'local API ● no DNS';
     if(j.sgai && j.sgai.enabled) s += ' ● AI on';
     if(j.nvidia && j.nvidia.enabled) s += ' ● NV on';
+    const sel = $('aiEngine');
+    if(sel && j.nvidia && j.nvidia.enabled && !(j.sgai && j.sgai.enabled)) sel.value = 'nvidia';
     $('hstat').textContent = s;
   }catch{ $('hstat').textContent = 'offline? run python app.py'; }
 }
@@ -448,6 +475,7 @@ function render(){
         <a class="abtn liquid-glass" target="_blank" rel="noopener" href="${mapsUrl(l)}">📍 Maps</a>
         ${l.phone?`<a class="abtn abtn-call liquid-glass" href="${telHref(l.phone)}">📞 Call</a>`:''}
         ${l.emails&&l.emails.length?`<button class="ghost" onclick="copyMail('${esc(l.emails[0]).replace(/'/g,'')}')">Copy ✉️</button>`:''}
+        <button class="ghost" onclick="openSummary(${i})">📝 Summary</button>
         <button class="ghost" onclick="aiEnrich(${i})">✨ AI</button>
         <button class="ghost" onclick="enrichOne(${i})">↻ Re-check</button>
       </div>
@@ -489,7 +517,8 @@ function sortedLeads(){
 function renderDash(){
   const tb=$('dashBody');
   if(!LEADS.length){ tb.innerHTML='<tr><td colspan="7" class="dmut">No leads yet — run a search or Demo.</td></tr>'; return; }
-  tb.innerHTML = sortedLeads().map(l=>{
+  DASH = sortedLeads();
+  tb.innerHTML = DASH.map((l,di)=>{
     const site = l.website
       ? '<a href="'+esc(l.website)+'" target="_blank" rel="noopener" style="color:#67e8f9">'+esc(shortUrl(l.website))+'</a>'+(l.guessed?' <span class="dmut">(guessed)</span>':'')
       : '<span class="dmut">none — verify on Maps</span>';
@@ -503,7 +532,7 @@ function renderDash(){
       + '<td data-lbl="Business" class="stick"><b>'+esc(l.name)+'</b><div class="dmut">'+esc(l.address||'')+'</div></td>'
       + '<td data-lbl="Niche">'+esc(l.category||'business')+eng+'</td>'
       + '<td data-lbl="Contact">'+contact+'</td><td data-lbl="Website">'+site+'</td><td data-lbl="Emails">'+mails+'</td>'
-      + '<td data-lbl="Verify and call" style="min-width:0"><a class="dbtn dmaps" target="_blank" rel="noopener" href="'+mapsUrl(l)+'">📍 Check Maps</a>'+call+'</td></tr>';
+      + '<td data-lbl="Verify and call" style="min-width:0"><a class="dbtn dmaps" target="_blank" rel="noopener" href="'+mapsUrl(l)+'">📍 Check Maps</a>'+call+'<button class="dbtn dmaps" onclick="openDashSummary('+di+')">📝 Summary</button></td></tr>';
   }).join('');
 }
 function esc(s){ return String(s??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -604,7 +633,44 @@ document.querySelectorAll('#dashTable th[data-k]').forEach(th=>{
     renderDash();
   };
 });
+let DASH=[];
+function openSummary(i){
+  const l = LEADS[i]; if(!l) return;
+  $('mTitle').textContent = l.name;
+  $('mEng').textContent = '';
+  $('mBody').innerHTML = '<div class="hint">AI summarizing…</div>';
+  $('mback').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  const eng = ($('aiEngine') && $('aiEngine').value) || 'sgai';
+  fetch('/api/summary',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:l.name, category:l.category, address:l.address, area:AREA,
+      phone:l.phone, website:l.website, engine:eng})})
+  .then(r=>r.json().then(j=>({ok:r.ok, j})))
+  .then(({ok,j})=>{
+    if(!ok || j.error){ $('mBody').innerHTML = '<div class="hint">'+esc(j.error||'failed')+'</div>'; return; }
+    $('mEng').textContent = j.engine==='ai-nvidia' ? '✨ AI·NVIDIA' : '✨ AI';
+    let h = '<p class="msum">'+esc(j.summary||'No summary available.')+'</p>';
+    if(j.bullets && j.bullets.length) h += '<ul class="mbul">'+j.bullets.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>';
+    const c = j.contact||{};
+    h += '<div class="mcontact">';
+    if(j.website) h += '🌐 <a target="_blank" rel="noopener" href="'+esc(j.website)+'">'+esc(shortUrl(j.website))+'</a>'+(j.guessed?' <span class="dmut">(found by AI)</span>':'')+'<br/>';
+    (c.emails||[]).forEach(e=>{ h += '✉️ '+esc(e)+'<br/>'; });
+    (c.phones||[]).forEach(p=>{ h += '📞 <a href="'+telHref(p)+'">'+esc(p)+'</a><br/>'; });
+    h += '</div>';
+    $('mBody').innerHTML = h;
+  })
+  .catch(e=>{ $('mBody').innerHTML = '<div class="hint">Error: '+esc(e.message)+'</div>'; });
+}
+function openDashSummary(di){
+  const l = DASH[di]; if(!l) return;
+  openSummary(LEADS.indexOf(l));
+}
+function closeSummary(){ $('mback').classList.remove('show'); document.body.style.overflow=''; }
+$('mClose').onclick=closeSummary;
+$('mback').addEventListener('click', e=>{ if(e.target===$('mback')) closeSummary(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSummary(); });
 window.enrichOne=enrichOne; window.copyMail=copyMail; window.aiEnrich=aiEnrich;
+window.openSummary=openSummary; window.openDashSummary=openDashSummary; window.closeSummary=closeSummary;
 </script>
 </body>
 </html>

@@ -81,18 +81,41 @@ def _page_text(url):
 
 
 def _chat(page_text, url):
+    return _complete(SYSTEM,
+                     f"Website URL: {url}\n\nPAGE TEXT:\n{page_text}", 2048)
+
+
+SUMMARY_SYSTEM = (
+    "You write short business summaries for a sales researcher. "
+    "Reply with JSON ONLY, no markdown fences: "
+    '{"summary": "2-3 sentence plain-English description of what the business is and does", '
+    '"bullets": ["up to 5 short facts: services, contact, online presence"]}. '
+    "If facts are inferred rather than stated on the site, start summary with 'Likely '."
+)
+
+
+def summarize(context):
+    """One-shot prose summary from already-gathered facts. Returns dict."""
+    raw = _complete(SUMMARY_SYSTEM, context[:6000], 1024)
+    if not isinstance(raw, dict):
+        raise NVError("model JSON was not an object")
+    return {"summary": str(raw.get("summary") or "")[:800],
+            "bullets": [str(b)[:160] for b in (raw.get("bullets") or [])
+                        if b][:6]}
+
+
+def _complete(system, user_text, max_tokens):
     key = _key()
     if not key:
         raise NVDisabled("NVIDIA_API_KEY not set")
     base_payload = {
         "model": _model(),
         "temperature": 0,
-        "max_tokens": 2048,
+        "max_tokens": max_tokens,
         "stream": False,
         "messages": [
-            {"role": "system", "content": SYSTEM},
-            {"role": "user",
-             "content": f"Website URL: {url}\n\nPAGE TEXT:\n{page_text}"},
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_text},
         ],
     }
 

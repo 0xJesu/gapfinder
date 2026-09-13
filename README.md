@@ -40,6 +40,7 @@ liquid-glass hero on top.
 | 🔍 **Enrich** | Auto-guesses missing websites (DuckDuckGo), crawls contact pages (de-obfuscates `[at]`/`[dot]`), classifies `no-website / dead-site / thin-site / has-website` |
 | ✉️ **Verify free** | Syntax + DNS MX/A checks via `dnspython`, role-address fallback (`info@`, `contact@`, `hello@`) |
 | ✨ **AI Enrich** | Optional ScrapeGraphAI layer for hot leads: official-site search + structured profile (owner, services, booking, pricing, socials). Free pipeline stays the default |
+| 📝 **AI Summary** | Per-lead button (cards + dashboard) opening an AI business brief: what it does, fact bullets, contact — bottom-sheet modal on mobile |
 | 📊 **Dashboard** | Cards ⇄ sortable table (score, niche, website, emails, source). Stacked-row layout on phones — no sideways scrolling |
 | 📍 **Verify on Maps** | Every lead has a **Check Maps** button (Google Maps search for that exact business) to confirm it truly has no website |
 | 📞 **Tap-to-call** | `tel:` call buttons wherever a phone exists — opens the dialer directly on mobile |
@@ -197,6 +198,7 @@ Base: `http://127.0.0.1:5000`
 | `POST /api/search` | `{area\|bbox, category, max}` → leads |
 | `POST /api/enrich` | `{name, area, website, phone}` → emails, MX, score |
 | `POST /api/ai-enrich` | Same, via AI (`engine: "sgai"` default \| `"nvidia"`) → `ai` / `ai-nvidia` / `free-fallback` / `disabled` |
+| `POST /api/summary` | AI brief for one lead (`engine` optional) → `summary`, `bullets[]`, `contact`, `services[]` |
 | `GET /api/demo` | 6 sample leads (works offline) |
 
 ---
