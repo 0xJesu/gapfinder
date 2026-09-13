@@ -110,7 +110,11 @@ target websites, DNS).
 |---|---|---|
 | `HOST` | `127.0.0.1` | Bind address (`0.0.0.0` = reachable on your LAN) |
 | `PORT` | `5000` | Port |
-| `SGAI_API_KEY` | *(unset)* | Enables ✨ AI Enrich (optional, see below) |
+| `SGAI_API_KEY` | *(unset)* | Enables ✨ engine ScrapeGraph (optional) |
+| `NVIDIA_API_KEY` | *(unset)* | Enables ✨ engine NVIDIA (optional) |
+| `NVIDIA_MODEL` | `openai/gpt-oss-20b` | NIM chat model for extraction |
+
+See [.env.example](.env.example). Never commit real keys (`.env` is git-ignored).
 
 Examples:
 
@@ -154,20 +158,30 @@ Copy-paste tunables live in `app.py`:
 
 ## AI Enrich (optional)
 
-`sgai.py` adds a hybrid ScrapeGraphAI layer. Default stays 100% free; AI fires
-only when you tap ✨ on a hot lead.
+`sgai.py` + `nvidia.py` add a hybrid AI layer. Default stays 100% free; AI fires
+only when you tap ✨ on a hot lead, using the engine picked in the
+**✨ AI engine** dropdown (ScrapeGraph | NVIDIA).
+
+**ScrapeGraphAI cloud** — fetches the page itself and extracts (~5 credits +
+~6 for site search):
 
 1. Get a free key at [scrapegraphai.com/dashboard](https://scrapegraphai.com/dashboard)
-   (500 one-time credits ≈ ~45 hot leads: ~6 for site search + 5 for extraction)
-2. Set it server-side (**never in browser code**) and restart:
+   (500 one-time credits ≈ ~45 hot leads)
+2. `setx SGAI_API_KEY "sgai-..."` and restart `python app.py`
 
-```powershell
-setx SGAI_API_KEY "sgai-..."
-python app.py
-```
+**NVIDIA NIM ([build.nvidia.com](https://build.nvidia.com))** — we fetch the
+page text, your chosen model extracts strict JSON (OpenAI-compatible
+`POST /v1/chat/completions`, temperature 0, JSON mode with plain-prompt retry):
 
-The header pill shows `● AI on` when keyed. On 401/402/429 the endpoint
-returns `engine: "free-fallback"` and the UI tells you — the tool never breaks.
+1. Generate a key at build.nvidia.com (per-model entitlements differ per key —
+   verify yours via `GET /v1/models`; `openai/gpt-oss-20b` is a safe default,
+   also seen working: `moonshotai/kimi-k3`, `z-ai/glm-5.3-flash`)
+2. `setx NVIDIA_API_KEY "nvapi-..."` (+ optional `setx NVIDIA_MODEL "..."`)
+   and restart `python app.py`
+
+The header pill shows `● AI on` / `● NV on` when keyed. Keys live **only** in
+server-side env vars — never in browser code, never committed. On 401/402/429
+the endpoint returns `engine: "free-fallback"` and the UI tells you.
 
 ---
 
@@ -182,7 +196,7 @@ Base: `http://127.0.0.1:5000`
 | `GET /api/geocode?q=` | Place → bbox + lat/lon (Nominatim) |
 | `POST /api/search` | `{area\|bbox, category, max}` → leads |
 | `POST /api/enrich` | `{name, area, website, phone}` → emails, MX, score |
-| `POST /api/ai-enrich` | Same, via ScrapeGraphAI (`engine: ai\|free-fallback\|disabled`) |
+| `POST /api/ai-enrich` | Same, via AI (`engine: "sgai"` default \| `"nvidia"`) → `ai` / `ai-nvidia` / `free-fallback` / `disabled` |
 | `GET /api/demo` | 6 sample leads (works offline) |
 
 ---
@@ -193,6 +207,8 @@ Base: `http://127.0.0.1:5000`
 gapfinder/
 ├── app.py              # Flask backend: OSM + crawl + MX + scoring + API
 ├── sgai.py             # Optional ScrapeGraphAI hybrid layer (needs key)
+├── nvidia.py           # Optional NVIDIA NIM hybrid layer (needs key)
+├── .env.example        # Safe template for keys/ports (copy to .env)
 ├── requirements.txt
 ├── templates/
 │   └── index.html      # Liquid-glass hero + tool UI (single file, mobile-first)
@@ -237,7 +253,8 @@ Prefer the React hero standalone? `cd hero && npm install && npm run dev`.
 | Mode | Cost |
 |---|---|
 | Default pipeline (OSM + crawl + MX) | **$0 forever**, no keys |
-| ✨ AI Enrich | $0 on the 500-credit free tier, then from $20/mo (your key, your spend) |
+| ✨ AI Enrich (ScrapeGraph) | $0 on the 500-credit free tier, then from $20/mo (your key, your spend) |
+| ✨ AI Enrich (NVIDIA) | Billed on your build.nvidia.com account (your key, your spend) |
 | Hosting | $0 locally · ~$5/mo VPS if you outgrow localhost |
 
 ---

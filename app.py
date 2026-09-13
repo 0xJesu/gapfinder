@@ -24,6 +24,12 @@ try:
 except Exception:
     HAS_SGAI = False
 
+try:
+    import nvidia
+    HAS_NV = True
+except Exception:
+    HAS_NV = False
+
 app = Flask(__name__)
 
 UA = {"User-Agent": "LocalGapFinder/1.0 (vibe-coding demo; contact: demo@localhost)"}
@@ -285,6 +291,7 @@ def health():
             out["sgai"] = {"enabled": False}
     else:
         out["sgai"] = {"enabled": False}
+    out["nvidia"] = {"enabled": bool(HAS_NV and nvidia.enabled())}
     return jsonify(out)
 
 @app.route("/api/geocode")
@@ -399,19 +406,27 @@ def enrich():
 
 @app.route("/api/ai-enrich", methods=["POST"])
 def ai_enrich():
-    """Hybrid AI enrich: ScrapeGraphAI cloud when keyed, else free fallback signal.
+    """Hybrid AI enrich. Body may include "engine": "sgai" (default) | "nvidia".
 
-    Fires on hot leads only (caller decides). Costs ~5 credits (extract) plus
-    ~6 if website discovery is needed. Never raises: always returns JSON with
-    an `engine` field of 'ai' | 'free-fallback' | 'disabled'.
+    - sgai: ScrapeGraphAI cloud (fetches + extracts, ~5 credits + ~6 search).
+    - nvidia: build.nvidia.com NIM (we fetch page text, model extracts JSON).
+    Never raises: always JSON with engine 'ai' | 'ai-nvidia' |
+    'free-fallback' | 'disabled'.
     """
     data = request.get_json(force=True) or {}
     name = (data.get("name") or "").strip()
     area = (data.get("area") or "").strip()
     website = (data.get("website") or "").strip()
     phone = (data.get("phone") or "").strip()
+    use_nv = (data.get("engine") or "sgai").strip().lower() == "nvidia"
+    eng_label = "ai-nvidia" if use_nv else "ai"
 
-    if not HAS_SGAI or not sgai.enabled():
+    if use_nv and (not HAS_NV or not nvidia.enabled()):
+        return jsonify({
+            "engine": "disabled",
+            "error": "NVIDIA_API_KEY not set. Set it server-side and restart.",
+        }), 503
+    if not use_nv and (not HAS_SGAI or not sgai.enabled()):
         return jsonify({
             "engine": "disabled",
             "error": "SGAI_API_KEY not set. Set it server-side and restart.",
@@ -420,20 +435,29 @@ def ai_enrich():
     credits_used, guessed = 0, False
     try:
         if not website and name:
-            website = sgai.search_website(name, area)
-            credits_used += 6
+            if use_nv:
+                website = duckduckgo_guess(name, area)  # NIM can't browse
+            else:
+                website = sgai.search_website(name, area)
+                credits_used += 6
             guessed = bool(website)
         if not website:
-            return jsonify({"engine": "ai", "name": name, "website": "",
+            return jsonify({"engine": eng_label, "name": name, "website": "",
                             "emails": [], "score": 60, "status": "no-website",
                             "reasons": ["AI found no website either — hottest lead"],
                             "credits_used": credits_used})
-        profile = sgai.extract_lead(website)
-        credits_used += 5
-    except sgai.SGAICredits as ex:
-        return jsonify({"engine": "free-fallback",
-                        "error": f"AI credits exhausted ({ex}); used free pipeline"}), 429
-    except sgai.SGAIError as ex:
+        if use_nv:
+            profile = nvidia.extract_lead(website)
+        else:
+            profile = sgai.extract_lead(website)
+            credits_used += 5
+    except Exception as ex:
+        t = type(ex).__name__
+        if t == "SGAICredits":
+            return jsonify({"engine": "free-fallback",
+                            "error": f"AI credits exhausted ({ex}); used free pipeline"}), 429
+        if t in ("SGAIDisabled", "NVDisabled"):
+            return jsonify({"engine": "disabled", "error": str(ex)}), 503
         return jsonify({"engine": "free-fallback",
                         "error": f"AI failed ({ex}); used free pipeline"}), 502
 
@@ -472,7 +496,7 @@ def ai_enrich():
 
     status_label = "thin-site" if not emails else "has-website"
     return jsonify({
-        "engine": "ai", "name": name, "website": website, "guessed": guessed,
+        "engine": eng_label, "name": name, "website": website, "guessed": guessed,
         "domain": domain, "emails": emails, "mx_valid": mx_valid,
         "mx_detail": mx_detail, "site_status": site_status,
         "status": status_label, "score": score, "reasons": reasons,

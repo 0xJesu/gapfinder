@@ -319,6 +319,12 @@
       <button class="ghost" id="btnDemo">✨ Demo data</button>
       <button class="ghost" id="btnCsv">⬇ CSV</button>
     </div>
+    <div class="row">
+      <select id="aiEngine" title="AI engine used by the ✨ button" style="flex:1;min-width:160px">
+        <option value="sgai">✨ AI engine: ScrapeGraph</option>
+        <option value="nvidia">✨ AI engine: NVIDIA</option>
+      </select>
+    </div>
     <div class="progress" id="prog"><i id="progbar"></i></div>
     <div class="hint" id="status">Tip: Search finds OSM listings fast. Then <b>Enrich all</b> guesses websites, crawls emails &amp; scores. Data: © OpenStreetMap contributors (ODbL).</div>
   </div>
@@ -406,6 +412,7 @@ async function health(){
     $('hdot').classList.add('ok');
     let s = j.dns ? 'local API ● DNS on' : 'local API ● no DNS';
     if(j.sgai && j.sgai.enabled) s += ' ● AI on';
+    if(j.nvidia && j.nvidia.enabled) s += ' ● NV on';
     $('hstat').textContent = s;
   }catch{ $('hstat').textContent = 'offline? run python app.py'; }
 }
@@ -429,7 +436,7 @@ function render(){
         <div class="ring" style="--p:${p};--c:${c}"><span>${p}</span></div>
         <div><h4>${esc(l.name)}</h4><div class="cat">${esc(l.category||'business')} · #${i+1}</div></div>
       </div>
-      ${badge(l.status||'no-website')}${l.engine==='ai'?'<span class="aire">✨ AI-enriched</span>':''}
+      ${badge(l.status||'no-website')}${(l.engine||'').indexOf('ai')===0?'<span class="aire">✨ '+(l.engine==='ai-nvidia'?'AI·NVIDIA':'AI-enriched')+'</span>':''}
       <div class="kv">📍 ${esc(l.address||'—')}<br/>
       ${l.phone?'📞 <b>'+esc(l.phone)+'</b><br/>':'📞 <span style="opacity:.6">no phone listed</span><br/>'}
       ${l.website?'🌐 <a href="'+esc(l.website)+'" target="_blank">'+esc(shortUrl(l.website))+'</a>'+(l.guessed?' <span style="font-size:11px;opacity:.7">(guessed)</span>':''):'🌐 <span style="opacity:.6">no website</span>'}<br/>
@@ -573,15 +580,16 @@ function toCSV(){
 
 async function aiEnrich(i){
   const l = LEADS[i]; if(!l) return;
-  toast('AI enriching: ' + l.name + '…');
+  const eng = ($('aiEngine') && $('aiEngine').value) || 'sgai';
+  toast('AI enriching ('+eng+'): ' + l.name + '…');
   try{
     const r = await fetch('/api/ai-enrich',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:l.name, area:AREA, website:l.website, phone:l.phone})});
+      body:JSON.stringify({name:l.name, area:AREA, website:l.website, phone:l.phone, engine:eng})});
     const j = await r.json();
-    if(j.engine==='ai'){ Object.assign(l, j); render();
-      toast('AI done' + (j.credits_used!=null ? ' (~'+j.credits_used+' credits)' : ''));
+    if(j.engine==='ai'||j.engine==='ai-nvidia'){ Object.assign(l, j); render();
+      toast('AI done' + (j.credits_used ? ' (~'+j.credits_used+' credits)' : ''));
     } else if(j.engine==='free-fallback'){ toast(j.error || 'AI unavailable — free pipeline used'); }
-    else { toast(j.error || 'AI disabled — set SGAI_API_KEY server-side'); }
+    else { toast(j.error || 'AI disabled — set the key server-side'); }
   }catch(e){ toast('AI error: '+e.message); }
 }
 
